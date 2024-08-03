@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>الهروب من النيازك</title>
+    <style>
+        #message { text-align: center; }
+        canvas { background: #000; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <h1 id="message"></h1>
+    <canvas id="gameCanvas" width="360" height="640"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const context = canvas.getContext('2d');
+        const shipWidth = 50, shipHeight = 50;
+        let shipX = canvas.width / 2 - shipWidth / 2;
+        const shipY = canvas.height - shipHeight - 10;
+        let rightPressed = false, leftPressed = false;
+        const meteorites = [];
+        const bullets = [];
+        let score = 0;
+        let gameOver = false;
+
+        // تحميل الصور
+        const shipImage = new Image();
+        shipImage.src = 'spaceship.png';
+
+        const meteoriteImage = new Image();
+        meteoriteImage.src = 'meteorite.png';
+
+        const explosionImage = new Image();
+        explosionImage.src = 'explosion.png';
+
+        // التأكد من تحميل الصور قبل بدء اللعبة
+        let imagesLoaded = 0;
+        const totalImages = 3;
+
+        function imageLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                updateGame();
+            }
+        }
+
+        shipImage.onload = imageLoaded;
+        shipImage.onerror = () => {
+            console.error('Failed to load ship image');
+        };
+
+        meteoriteImage.onload = imageLoaded;
+        meteoriteImage.onerror = () => {
+            console.error('Failed to load meteorite image');
+        };
+
+        explosionImage.onload = imageLoaded;
+        explosionImage.onerror = () => {
+            console.error('Failed to load explosion image');
+        };
+
+        // رسم السفينة
+        function drawShip() {
+            context.drawImage(shipImage, shipX, shipY, shipWidth, shipHeight);
+        }
+
+        // رسم النيازك
+        function drawMeteorites() {
+            for (let i = 0; i < meteorites.length; i++) {
+                context.drawImage(meteoriteImage, meteorites[i].x, meteorites[i].y, meteorites[i].width, meteorites[i].height);
+                meteorites[i].y += meteorites[i].speed;
+                if (meteorites[i].y > canvas.height) {
+                    meteorites.splice(i, 1);
+                    score++;
+                }
+            }
+        }
+
+        // رسم الطلقات
+        function drawBullets() {
+            for (let i = 0; i < bullets.length; i++) {
+                context.fillStyle = 'red';
+                context.fillRect(bullets[i].x, bullets[i].y, 5, 10);
+                bullets[i].y -= bullets[i].speed;
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        // تحديث موقع السفينة بناءً على المدخلات
+        function updateShipPosition() {
+            if (rightPressed && shipX < canvas.width - shipWidth) {
+                shipX += 5;
+            }
+            if (leftPressed && shipX > 0) {
+                shipX -= 5;
+            }
+        }
+
+        // الكشف عن التصادم
+        function detectCollision() {
+            for (let i = 0; i < meteorites.length; i++) {
+                if (shipX < meteorites[i].x + meteorites[i].width &&
+                    shipX + shipWidth > meteorites[i].x &&
+                    shipY < meteorites[i].y + meteorites[i].height &&
+                    shipY + shipHeight > meteorites[i].y) {
+                    context.drawImage(explosionImage, shipX, shipY, shipWidth, shipHeight);
+                    document.getElementById("message").textContent = "Game Over! Your score: " + score;
+                    clearInterval(interval); // لإنهاء اللعبة
+                    gameOver = true;
+                }
+            }
+        }
+
+        // الكشف عن اصطدام الطلقات بالنيازك
+        function detectBulletCollision() {
+            for (let i = 0; i < bullets.length; i++) {
+                for (let j = 0; j < meteorites.length; j++) {
+                    if (bullets[i].x < meteorites[j].x + meteorites[j].width &&
+                        bullets[i].x + 5 > meteorites[j].x &&
+                        bullets[i].y < meteorites[j].y + meteorites[j].height &&
+                        bullets[i].y + 10 > meteorites[j].y) {
+                        meteorites.splice(j, 1);
+                        bullets.splice(i, 1);
+                        score++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // تحديث اللعبة
+        function updateGame() {
+            if (!gameOver) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawShip();
+                drawMeteorites();
+                drawBullets();
+                updateShipPosition();
+                detectCollision();
+                detectBulletCollision();
+                requestAnimationFrame(updateGame);
+            }
+        }
+
+        // إنشاء نيازك جديدة
+        function createMeteorite() {
+            const width = Math.random() * 30 + 20;
+            meteorites.push({
+                x: Math.random() * (canvas.width - width),
+                y: -20,
+                width: width,
+                height: width,
+                speed: Math.random() * 2 + 1
+            });
+        }
+
+        // إنشاء طلقة جديدة
+        function createBullet() {
+            bullets.push({
+                x: shipX + shipWidth / 2 - 2.5,
+                y: shipY,
+                speed: 5
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key == 'Right' || e.key == 'ArrowRight') rightPressed = true;
+            if (e.key == 'Left' || e.key == 'ArrowLeft') leftPressed = true;
+            if (e.key == ' ' || e.key == 'Spacebar') createBullet();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key == 'Right' || e.key == 'ArrowRight') rightPressed = false;
+            if (e.key == 'Left' || e.key == 'ArrowLeft') leftPressed = false;
+        });
+
+        const interval = setInterval(createMeteorite, 1000); // إضافة نيازك كل ثانية
+    </script>
+</body>
+</html>
