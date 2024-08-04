@@ -114,12 +114,14 @@
 
       // Detect Collision
       function detectCollision() {
+        const shipCollisionWidth = shipWidth - 20;
+        const shipCollisionHeight = shipHeight - 30;
         for (let i = 0; i < meteorites.length; i++) {
           if (
-            shipX < meteorites[i].x + meteorites[i].width &&
-            shipX + shipWidth > meteorites[i].x &&
-            shipY < meteorites[i].y + meteorites[i].height &&
-            shipY + shipHeight > meteorites[i].y
+            shipX + 10 < meteorites[i].x + meteorites[i].width &&
+            shipX + shipCollisionWidth > meteorites[i].x &&
+            shipY + 10 < meteorites[i].y + meteorites[i].height &&
+            shipY + shipCollisionHeight > meteorites[i].y
           ) {
             context.drawImage(
               explosionImage,
@@ -130,7 +132,7 @@
             );
             document.getElementById("message").textContent =
               "Game Over! Your score: " + score;
-            clearInterval(interval); // لإنهاء اللعبة
+            clearInterval(interval); // Game over
             gameOver = true;
           }
         }
